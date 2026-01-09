@@ -1,6 +1,41 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
 
 export default function Home() {
+  const [message, setMessage] = useState("");
+  const [reply, setReply] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!message.trim()) return;
+
+    setIsLoading(true);
+    setReply("");
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setReply(data.reply);
+      } else {
+        setReply(`エラー: ${data.error}`);
+      }
+    } catch (error) {
+      setReply("通信エラーが発生しました");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white p-6">
       {/* 入力部分 */}
@@ -10,10 +45,24 @@ export default function Home() {
           className="w-full p-4 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
           rows={3}
           placeholder="ここに食事内容や質問を入力"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
         />
-        <button className="mt-3 bg-blue-500 text-white px-6 py-2 rounded-lg shadow hover:bg-blue-600 transition">
-          送信
+        <button
+          onClick={handleSubmit}
+          disabled={isLoading || !message.trim()}
+          className="mt-3 bg-blue-500 text-white px-6 py-2 rounded-lg shadow hover:bg-blue-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {isLoading ? "送信中..." : "送信"}
         </button>
+
+        {/* AIの回答表示 */}
+        {reply && (
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="text-lg font-semibold text-blue-600 mb-2">AIの回答</h3>
+            <p className="text-gray-700 whitespace-pre-wrap">{reply}</p>
+          </div>
+        )}
       </div>
 
       {/* 1ヶ月分のカロリー・PFCテーブル */}
