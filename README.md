@@ -1,3 +1,54 @@
+# Calreco
+
+おすすめ構成（実装中）:
+
+- Front: Next.js App Router
+- UI: Tailwind + shadcn/ui（最小コンポーネント）
+- API: Next.js Route Handler
+- AI: Gemini 2.5 Flash
+- DB: PostgreSQL
+- ORM: Prisma
+
+## 1) セットアップ
+
+```bash
+npm install
+cp .env.example .env
+```
+
+`.env` の `GEMINI_API_KEY` を埋めてください。
+
+## 2) DB（PostgreSQL）
+
+Docker が使える場合:
+
+```bash
+docker compose up -d db
+```
+
+※ Docker が起動していないと失敗します（Docker Desktop を起動）。
+
+Prisma（初回）:
+
+```bash
+npx prisma generate
+npx prisma migrate dev --name init
+```
+
+## 3) 開発サーバー
+
+```bash
+npm run dev
+```
+
+ブラウザで `http://localhost:3000` を開きます。
+
+## 4) API
+
+- `POST /api/chat`
+- body: `{ "message": "..." }`
+- env: `GEMINI_API_KEY`
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
