@@ -20,20 +20,39 @@ cp .env.example .env
 
 ## 2) DB（PostgreSQL）
 
-Docker が使える場合:
+### Docker を使う場合（ローカル）
+
+**先に Docker Desktop を起動**してください（メニューバーにクジラのアイコンが出て「Running」になるまで待つ）。  
+未起動だと次のエラーになります:
+
+`Cannot connect to the Docker daemon ... Is the docker daemon running?`
+
+起動後:
 
 ```bash
 docker compose up -d db
 ```
 
-※ Docker が起動していないと失敗します（Docker Desktop を起動）。
-
-Prisma（初回）:
+Prisma（初回・DB起動後）:
 
 ```bash
 npx prisma generate
-npx prisma migrate dev --name init
+npx prisma migrate deploy
 ```
+
+開発中にスキーマを変えた場合は `npx prisma migrate dev` でも可です。
+
+### Docker を使わない場合
+
+PostgreSQL がどこかにあれば `.env` の `DATABASE_URL` だけ差し替えれば migrate できます。例:
+
+- **Supabase**: プロジェクトの「Database」→ Connection string（URI）をコピーし、`DATABASE_URL` に貼る（`?sslmode=require` が付くことが多い）。
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/postgres?sslmode=require"
+```
+
+そのあと同様に `npx prisma migrate deploy` を実行します。
 
 ## 3) 開発サーバー
 
@@ -45,9 +64,9 @@ npm run dev
 
 ## 4) API
 
-- `POST /api/chat`
-- body: `{ "message": "..." }`
-- env: `GEMINI_API_KEY`
+- `POST /api/chat` … body: `{ "message": "..." }` … env: `GEMINI_API_KEY`
+- `POST /api/memo` … AIのJSONと入力文をDBに保存。body: `{ "rawInput": "...", "result": { ... } }`
+- `GET /api/memo` … 最新30件の記録一覧
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 

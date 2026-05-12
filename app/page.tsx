@@ -1,27 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-
-type NutritionJson = {
-  foods: Array<{
-    name: string;
-    amount?: string;
-    kcal: number;
-    p: number;
-    f: number;
-    c: number;
-  }>;
-  total: { kcal: number; p: number; f: number; c: number };
-  notes?: string;
-};
+import {
+  coerceNutrition,
+  formatFoodsSummary,
+  type NutritionJson,
+} from "@/lib/mealNutrition";
 
 type MealLog = {
   id: number;
   rawInput: string;
-  result: NutritionJson;
+  /** Prisma Json として返るため unknown */
+  result: unknown;
   createdAt: string;
 };
 
@@ -30,19 +23,41 @@ export default function Home() {
   const [reply, setReply] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [logs, setLogs] = useState<MealLog[]>([]);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [saveHint, setSaveHint] = useState<string | null>(null);
 
-  const refreshLogs = async () => {
-    const res = await fetch("/api/memo", { cache: "no-store" });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (Array.isArray(data.logs)) setLogs(data.logs);
-  };
+  const refreshLogs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/memo", { cache: "no-store" });
+      const data = (await res.json()) as { logs?: MealLog[]; error?: string };
+
+      if (res.ok && Array.isArray(data.logs)) {
+        setLogs(data.logs);
+        setDbError(null);
+        return;
+      }
+
+      setDbError(
+        typeof data.error === "string"
+          ? data.error
+          : "記録一覧を読み込めませんでした。"
+      );
+      if (Array.isArray(data.logs)) setLogs(data.logs);
+    } catch {
+      setDbError("記録一覧の通信に失敗しました。");
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshLogs();
+  }, [refreshLogs]);
 
   const handleSubmit = async () => {
     if (!message.trim()) return;
 
     setIsLoading(true);
     setReply("");
+    setSaveHint(null);
 
     try {
       const response = await fetch("/api/chat", {
@@ -56,14 +71,26 @@ export default function Home() {
       const data = await response.json();
 
       if (response.ok) {
-        setReply(JSON.stringify(data.json, null, 2));
+        const json = data.json as NutritionJson;
+        setReply(JSON.stringify(json, null, 2));
 
-        // DBへ保存
-        await fetch("/api/memo", {
+        const memoRes = await fetch("/api/memo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rawInput: message, result: data.json }),
+          body: JSON.stringify({ rawInput: message, result: json }),
         });
+        const memoData = (await memoRes.json()) as { error?: string };
+        if (!memoRes.ok) {
+          setSaveHint(null);
+          setDbError(
+            typeof memoData.error === "string"
+              ? memoData.error
+              : "DBへの保存に失敗しました。"
+          );
+        } else {
+          setDbError(null);
+          setSaveHint("記録テーブルに保存しました。");
+        }
 
         await refreshLogs();
       } else {
@@ -94,6 +121,12 @@ export default function Home() {
           </p>
         </div>
 
+        {dbError ? (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            {dbError}
+          </div>
+        ) : null}
+
         <Card>
           <CardHeader>
             <CardTitle>AI 食事記録</CardTitle>
@@ -120,6 +153,9 @@ export default function Home() {
                 <pre className="mt-2 whitespace-pre-wrap text-sm text-neutral-700">
                   {reply}
                 </pre>
+                {saveHint ? (
+                  <p className="mt-2 text-sm font-medium text-emerald-700">{saveHint}</p>
+                ) : null}
               </div>
             )}
           </CardContent>
@@ -141,6 +177,7 @@ export default function Home() {
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-medium">日時</th>
                     <th className="px-6 py-3 text-left text-sm font-medium">内容</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium">内訳（食品）</th>
                     <th className="px-6 py-3 text-right text-sm font-medium">
                       カロリー
                     </th>
@@ -154,7 +191,9 @@ export default function Home() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(logs.length ? logs : []).map((log) => (
+                  {logs.map((log) => {
+                    const n = coerceNutrition(log.result);
+                    return (
                     <tr
                       key={log.id}
                       className="text-center even:bg-neutral-50 hover:bg-neutral-100"
@@ -162,30 +201,38 @@ export default function Home() {
                       <td className="border-b border-neutral-200 px-6 py-3 text-left text-sm whitespace-nowrap">
                         {new Date(log.createdAt).toLocaleString()}
                       </td>
-                      <td className="border-b border-neutral-200 px-6 py-3 text-left text-sm">
-                        {log.rawInput}
+                      <td className="border-b border-neutral-200 px-6 py-3 text-left text-sm max-w-[200px]">
+                        <span className="line-clamp-2">{log.rawInput}</span>
+                      </td>
+                      <td className="border-b border-neutral-200 px-6 py-3 text-left text-sm max-w-xs">
+                        <span className="line-clamp-2 text-neutral-700">
+                          {formatFoodsSummary(n)}
+                        </span>
                       </td>
                       <td className="border-b border-neutral-200 px-6 py-3 text-right text-sm">
-                        {log.result.total.kcal} kcal
+                        {n.total.kcal} kcal
                       </td>
                       <td className="border-b border-neutral-200 px-6 py-3 text-right text-sm">
-                        {log.result.total.p} g
+                        {n.total.p} g
                       </td>
                       <td className="border-b border-neutral-200 px-6 py-3 text-right text-sm">
-                        {log.result.total.f} g
+                        {n.total.f} g
                       </td>
                       <td className="border-b border-neutral-200 px-6 py-3 text-right text-sm">
-                        {log.result.total.c} g
+                        {n.total.c} g
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   {!logs.length && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="border-b border-neutral-200 px-6 py-6 text-left text-sm text-neutral-500"
                       >
-                        まだ記録がありません。上のフォームから送信すると自動で保存されます。
+                        {dbError
+                          ? "上記の手順でDBを起動・マイグレーションすると、ここに記録が表示されます。"
+                          : "まだ記録がありません。上のフォームから送信すると自動で保存されます。"}
                       </td>
                     </tr>
                   )}

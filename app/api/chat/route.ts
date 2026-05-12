@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-type NutritionJson = {
-  foods: Array<{
-    name: string;
-    amount?: string;
-    kcal: number;
-    p: number;
-    f: number;
-    c: number;
-  }>;
-  total: { kcal: number; p: number; f: number; c: number };
-  notes?: string;
-};
+import { coerceNutrition, type NutritionJson } from "@/lib/mealNutrition";
 
 function extractTextFromGeminiResponse(result: {
   response: {
@@ -195,7 +183,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ json });
+    return NextResponse.json({ json: coerceNutrition(json) });
   } catch (error) {
     console.error("Gemini API error:", error);
     const details = formatUnknownError(error);
