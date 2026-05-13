@@ -18,6 +18,10 @@ model MealLog {
   id        Int      @id @default(autoincrement())
   rawInput  String
   result    Json
+  totalKcal Float?
+  totalP    Float?
+  totalF    Float?
+  totalC    Float?
   createdAt DateTime @default(now())
 
   @@index([createdAt])
