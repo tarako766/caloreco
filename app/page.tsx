@@ -35,10 +35,26 @@ type RowDraft = {
   p: string;
   f: string;
   c: string;
+  /** `YYYY-MM-DDTHH:mm` 形式（datetime-local 用、ローカルタイム） */
+  createdAt: string;
 };
 
 const inputClass =
   "w-full min-w-[3.5rem] rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400";
+
+function toDateTimeLocalValue(iso:string):string {
+  const d = new Date(iso):
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n:number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function datetimeLocalToIso(s: string): string | null {
+  if (!s) return null;
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
 
 function logToDraft(log: MealLog): RowDraft {
   const n = coerceNutrition(log.result);
@@ -49,6 +65,7 @@ function logToDraft(log: MealLog): RowDraft {
     p: String(n.total.p),
     f: String(n.total.f),
     c: String(n.total.c),
+    createdAt: toDatetimeLocalValue(log.createdAt),
   };
 }
 
@@ -298,6 +315,7 @@ export default function Home() {
       rawInput: string;
       foodsLine: string;
       total: { kcal: number; p: number; f: number; c: number };
+      createdAt: string;
     }> = [];
 
     for (const id of editing) {
@@ -313,11 +331,17 @@ export default function Home() {
         );
         return;
       }
+      const createdAtIso = datetimeLocalToIso(d.createdAt);
+      if (!createdAtIso) {
+        setActionNotice(`行 id=${id}: 日時の形式が正しくありません。`);
+        return;
+      }
       items.push({
         id,
         rawInput: d.rawInput,
         foodsLine: d.foodsLine,
         total,
+        createdAt: createdAtIso,
       });
     }
 
@@ -469,6 +493,7 @@ export default function Home() {
             p: String(n.total.p),
             f: String(n.total.f),
             c: String(n.total.c),
+            createdAt: toDatetimeLocalValue(new Date().toISOString()),
           },
         });
       } else {
@@ -942,7 +967,21 @@ export default function Home() {
                           />
                         </td>
                         <td className="border-b border-neutral-200 px-4 py-2 text-left text-sm whitespace-nowrap align-top">
-                          {new Date(log.createdAt).toLocaleString()}
+                          {isEditing && draft ? (
+                            <input
+                              type="datetime-local"
+                              className={cn(inputClass, "min-w-[12rem]")}
+                              value={draft.createdAt}
+                              onChange={(e) =>
+                                setDrafts((prev) => ({
+                                  ...prev,
+                                  [log.id]: { ...prev[log.id]!, createdAt: e.target.value },
+                                }))
+                              }
+                            />
+                          ) : (
+                            new Date(log.createdAt).toLocaleString()
+                          )}
                         </td>
                         <td className="border-b border-neutral-200 px-4 py-2 text-left align-top max-w-[14rem]">
                           {isEditing && draft ? (

@@ -198,6 +198,7 @@ export async function PATCH(req: NextRequest) {
       rawInput: string;
       foodsLine: string;
       total: { kcal: number; p: number; f: number; c: number };
+      createdAt?: Date;
     }> = [];
 
     for (const item of itemsRaw) {
@@ -222,11 +223,29 @@ export async function PATCH(req: NextRequest) {
           { status: 400 }
         );
       }
+      let createdAt: Date | undefined;
+      if (o.createdAt !== undefined && o.createdAt !== null) {
+        if (typeof o.createdAt !== "string") {
+          return NextResponse.json(
+            { error: "createdAt は ISO 8601 形式の文字列にしてください" },
+            { status: 400 }
+          );
+        }
+        const d = new Date(o.createdAt);
+        if (Number.isNaN(d.getTime())) {
+          return NextResponse.json(
+            { error: "createdAt の日時形式が正しくありません" },
+            { status: 400 }
+          );
+        }
+        createdAt = d;
+      }
       rows.push({
         id,
         rawInput: rawInput.trim(),
         foodsLine: foodsLineStr,
         total,
+        createdAt,
       });
     }
 
@@ -266,6 +285,7 @@ export async function PATCH(req: NextRequest) {
             totalP: row.total.p,
             totalF: row.total.f,
             totalC: row.total.c,
+            ...(row.createdAt ? { createdAt: row.createdAt } : {}),
           },
         });
       })
