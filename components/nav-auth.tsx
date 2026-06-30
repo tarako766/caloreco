@@ -33,7 +33,7 @@ export function NavAuth() {
         <strong>{session.user.name}</strong>
       </span>
       <Link href="/account">
-        <Button variant="secondary" size="sm">
+        <Button variant="sky" size="sm">
           アカウント
         </Button>
       </Link>
