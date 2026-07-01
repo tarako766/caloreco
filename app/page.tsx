@@ -19,6 +19,7 @@ import {
   formatAssistantTurnForHistory,
   displayAssistantHistoryContent,
 } from "@/lib/chatHistory";
+import { MealLogDiaryList } from "@/components/meal-log-diary-list";
 
 type MealLog = {
   id: number;
@@ -896,7 +897,24 @@ export default function Home() {
               ) : null}
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="md:hidden">
+              <MealLogDiaryList
+                logs={logs}
+                dbError={dbError}
+                selected={selected}
+                editing={editing}
+                drafts={drafts}
+                expandedFoodRows={expandedFoodRows}
+                allSelected={allSelected}
+                onToggleSelectAll={toggleSelectAll}
+                onToggleSelect={toggleSelect}
+                onToggleFoodDetail={toggleFoodDetailRow}
+                onCancelRowEdit={cancelRowEdit}
+                setDrafts={setDrafts}
+              />
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <table className="min-w-[58rem] w-full border-collapse overflow-hidden rounded-lg border border-neutral-200 bg-white">
                 <thead className="bg-neutral-900 text-white">
                   <tr>
