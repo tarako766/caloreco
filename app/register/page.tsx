@@ -11,6 +11,7 @@ const inputClass =
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [age, setAge] = useState("");
@@ -28,6 +29,7 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          email: email.trim(),
           username: username.trim(),
           password,
           age: Number(age),
@@ -56,12 +58,23 @@ export default function RegisterPage() {
           <CardHeader>
             <CardTitle>新規登録</CardTitle>
             <p className="text-sm text-neutral-600">
-              ユーザー名・パスワードとプロフィールを登録します。目標の PFC は後から AI で設定する予定です。
+              メールアドレス・ユーザー名・パスワードとプロフィールを登録します。メール認証は今後対応予定です。
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">ユーザー名（英数字_・3〜30）</label>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">メールアドレス</label>
+              <input
+                type="email"
+                className={inputClass}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                inputMode="email"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">ユーザー名（3〜30文字）</label>
               <input className={inputClass} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
             </div>
             <div>

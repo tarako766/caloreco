@@ -30,7 +30,7 @@ function LoginForm() {
         callbackUrl: "/",
       });
       if (res?.error) {
-        setError("ユーザー名またはパスワードが正しくありません。");
+        setError("ユーザー名・メールアドレスまたはパスワードが正しくありません。");
         return;
       }
       if (res?.ok) {
@@ -53,12 +53,12 @@ function LoginForm() {
             {registered ? (
               <p className="text-sm font-medium text-emerald-800">登録が完了しました。ログインしてください。</p>
             ) : (
-              <p className="text-sm text-neutral-600">ユーザー名とパスワードでログインします。</p>
+              <p className="text-sm text-neutral-600">ユーザー名またはメールアドレスとパスワードでログインします。</p>
             )}
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">ユーザー名</label>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">ユーザー名またはメールアドレス</label>
               <input className={inputClass} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
             </div>
             <div>

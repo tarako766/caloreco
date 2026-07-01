@@ -2,6 +2,7 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
+import { normalizeEmail } from "@/lib/email";
 
 /**
  * JWT の署名・検証に必須。未設定だと App Router の `getServerSession` が常に null になり、
@@ -27,15 +28,17 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        username: { label: "ユーザー名", type: "text" },
+        username: { label: "ユーザー名またはメールアドレス", type: "text" },
         password: { label: "パスワード", type: "password" },
       },
       async authorize(credentials) {
-        const username = credentials?.username?.trim();
+        const loginId = credentials?.username?.trim();
         const password = credentials?.password;
-        if (!username || !password) return null;
+        if (!loginId || !password) return null;
 
-        const user = await prisma.user.findUnique({ where: { username } });
+        const user = loginId.includes("@")
+          ? await prisma.user.findUnique({ where: { email: normalizeEmail(loginId) } })
+          : await prisma.user.findUnique({ where: { username: loginId } });
         if (!user) return null;
         const ok = await verifyPassword(password, user.passwordHash);
         if (!ok) return null;

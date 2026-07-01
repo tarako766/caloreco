@@ -11,6 +11,7 @@ import {
 
 type MeUser = {
   username: string;
+  email: string | null;
   age: number;
   gender: string;
   heightCm: number;
@@ -135,6 +136,7 @@ export default function AccountPage() {
             {user ? (
               <dl className="divide-y divide-neutral-100 rounded-lg border border-neutral-200 bg-white">
                 <ProfileRow label="名前" value={user.username} emphasized />
+                {user.email ? <ProfileRow label="メール" value={user.email} /> : null}
                 <ProfileRow label="性別" value={genderLabel[user.gender] ?? user.gender} />
                 <ProfileRow label="年齢" value={`${user.age} 歳`} />
                 <ProfileRow label="身長" value={`${formatBodyNumber(user.heightCm)} cm`} />
